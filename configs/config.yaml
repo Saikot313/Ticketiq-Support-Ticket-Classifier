@@ -1,0 +1,28 @@
+seed: 42
+
+data:
+  base_url: https://raw.githubusercontent.com/PolyAI-LDN/task-specific-datasets/master/banking_data/
+  raw_dir: data/raw
+  processed_dir: data/processed
+  val_size: 0.1
+
+baseline:
+  model_path: models/baseline_tfidf_lr.joblib
+
+model:
+  name: distilbert-base-uncased
+  max_length: 64
+  output_dir: models/distilbert_banking77
+
+train:
+  epochs: 4
+  batch_size: 32
+  lr: 5.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+
+inference:
+  confidence_threshold: 0.60
+  top_k: 3
+
+reports_dir: reports

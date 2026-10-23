@@ -1,0 +1,58 @@
+{
+  "test_metrics": {
+    "distilbert": {
+      "accuracy": 0.9188311688311688,
+      "macro_f1": 0.9184923069295107,
+      "weighted_f1": 0.9184923069295106,
+      "top3_accuracy": 0.9775974025974026
+    },
+    "baseline": {
+      "accuracy": 0.8866883116883116,
+      "macro_f1": 0.8871691384881102,
+      "weighted_f1": 0.8871691384881103,
+      "top3_accuracy": 0.9678571428571429
+    }
+  },
+  "priority": {
+    "priority_accuracy": 0.9626623376623377,
+    "high_priority_recall": 0.925,
+    "high_priority_precision": 0.950592885375494
+  },
+  "coverage_vs_accuracy": [
+    {
+      "threshold": 0.0,
+      "coverage": 1.0,
+      "accuracy": 0.9188311688311688
+    },
+    {
+      "threshold": 0.3,
+      "coverage": 0.9863636363636363,
+      "accuracy": 0.9275839368005266
+    },
+    {
+      "threshold": 0.5,
+      "coverage": 0.9422077922077922,
+      "accuracy": 0.9510682288077188
+    },
+    {
+      "threshold": 0.6,
+      "coverage": 0.9146103896103897,
+      "accuracy": 0.9602413915512957
+    },
+    {
+      "threshold": 0.7,
+      "coverage": 0.8818181818181818,
+      "accuracy": 0.9683357879234168
+    },
+    {
+      "threshold": 0.8,
+      "coverage": 0.814935064935065,
+      "accuracy": 0.9780876494023905
+    },
+    {
+      "threshold": 0.9,
+      "coverage": 0.6798701298701298,
+      "accuracy": 0.9894937917860553
+    }
+  ]
+}

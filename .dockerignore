@@ -1,0 +1,9 @@
+.venv
+.git
+__pycache__
+data
+reports
+notebooks
+tests
+.github
+models/baseline*
