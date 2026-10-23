@@ -1,4 +1,3 @@
-````markdown
 # 🎫 TicketIQ: Support Ticket Intent Classifier
 
 [![CI](https://github.com/Saikot313/ticketiq-support-ticket-classifier/actions/workflows/ci.yml/badge.svg)](https://github.com/Saikot313/ticketiq-support-ticket-classifier/actions/workflows/ci.yml)
@@ -184,4 +183,4 @@ Casanueva et al., 2020, *Efficient Intent Detection with Dual Sentence Encoders*
 
 ## Author
 **Md. Sakender Saikot**: [GitHub](https://github.com/Saikot313)
-````
+
