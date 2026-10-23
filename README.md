@@ -35,25 +35,25 @@ The project includes a **FastAPI REST API**, a **Streamlit dashboard**, a TF-IDF
 
 The main TicketIQ dashboard for entering a customer message, choosing sample tickets, and reviewing the model's prediction.
 
-![TicketIQ User Interface](screenshots/user-interface.png)
+![TicketIQ User Interface](screenshots/User_Interface.png)
 
 ### 2. Test One
 
 Example test case showing an analyzed ticket, predicted intent, confidence score, and recommended routing action.
 
-![TicketIQ Test One](screenshots/test-one.png)
+![TicketIQ Test One](screenshots/test_one.png)
 
 ### 3. Test Two
 
 A second example demonstrating how a different ticket intent is classified and presented in the dashboard.
 
-![TicketIQ Test Two](screenshots/test-two.png)
+![TicketIQ Test Two](screenshots/test_two.png)
 
 ### 4. Session Log
 
 The session log lists analyzed messages, predicted intents, priorities, confidence scores, and human-review flags for the current app session.
 
-![TicketIQ Session Log](screenshots/session-log.png)
+![TicketIQ Session Log](screenshots/session_log.png)
 
 ---
 
