@@ -6,134 +6,153 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-REST%20API-009688)
 ![Streamlit](https://img.shields.io/badge/Streamlit-UI-ff4b4b)
 
-A fine-tuned **DistilBERT (PyTorch)** model that reads a customer-support message, identifies **what the customer wants** (77 intents), assigns a **priority** (High / Medium / Low), and **flags low-confidence tickets for a human agent**. Served through a **FastAPI** service and a **Streamlit** UI, so workflow-automation tools (n8n, Zapier, Make) can call it directly.
+TicketIQ is an AI-assisted support-ticket classification system. It uses a fine-tuned **DistilBERT (PyTorch)** model to identify what a customer is asking about across **77 banking-support intents**, assign a rule-based priority, and flag low-confidence predictions for human review.
 
-## Example
+The project includes a **FastAPI REST API**, a **Streamlit dashboard**, a TF-IDF + Logistic Regression baseline, evaluation and error-analysis scripts, tests, Docker support, and GitHub Actions CI. The API can be called by workflow-automation tools such as n8n, Zapier, or Make.
 
-**Input:** `My card was stolen and I see payments I did not make`
+> **Dataset scope:** Banking77 contains English-language banking queries. Priority levels are assigned by configurable business rules, not learned from urgency-labelled examples. Use fictional or anonymized messages for demos.
 
-| Field | Value |
-|---|---|
-| `intent` | `lost_or_stolen_card` |
-| `confidence` | 0.97 |
-| `priority` | **High** |
-| `needs_human_review` | `false` |
+---
 
-Messages the model is unsure about (e.g. random text) fall below the confidence threshold and are routed to a human.
+## ✨ Key Features
 
-<!-- Add a screenshot of the Streamlit app: save it as docs/streamlit_ui.png and uncomment the next line -->
-<!-- ![Streamlit UI](docs/streamlit_ui.png) -->
+- **77-intent classification** with a fine-tuned DistilBERT model.
+- **Baseline comparison** against TF-IDF + Logistic Regression.
+- **Priority-aware routing** using a configurable intent-to-priority map.
+- **Confidence threshold** to flag uncertain predictions for human review.
+- **Top-k predictions** to help inspect alternative intent labels.
+- **Batch prediction** endpoint for processing multiple tickets.
+- **Streamlit UI** for single-ticket analysis, CSV batches, and session history.
+- **Evaluation and error analysis**, including confusion matrices and common intent confusions.
+- **REST API** with input validation and a health endpoint.
+- **Automated tests and CI** using pytest and GitHub Actions.
+- **Dockerfile** for containerizing the API.
+- **Reproducibility controls**, including fixed seeds and configuration files.
 
-## Results
+## 🖥️ Screenshots
 
-Evaluated on the official Banking77 test set (3,080 queries, 77 intents).
+### 1. User Interface
 
-| Model | Accuracy | Macro-F1 | Top-3 accuracy |
-|---|---|---|---|
+The main TicketIQ dashboard for entering a customer message, choosing sample tickets, and reviewing the model's prediction.
+
+![TicketIQ User Interface](screenshots/user-interface.png)
+
+### 2. Test One
+
+Example test case showing an analyzed ticket, predicted intent, confidence score, and recommended routing action.
+
+![TicketIQ Test One](screenshots/test-one.png)
+
+### 3. Test Two
+
+A second example demonstrating how a different ticket intent is classified and presented in the dashboard.
+
+![TicketIQ Test Two](screenshots/test-two.png)
+
+### 4. Session Log
+
+The session log lists analyzed messages, predicted intents, priorities, confidence scores, and human-review flags for the current app session.
+
+![TicketIQ Session Log](screenshots/session-log.png)
+
+---
+
+## 📊 Model Results
+
+Evaluated on the official Banking77 test set (**3,080 queries across 77 intents**).
+
+| Model | Accuracy | Macro-F1 | Top-3 Accuracy |
+|---|---:|---:|---:|
 | TF-IDF + Logistic Regression (baseline) | 0.8867 | 0.8872 | 0.9679 |
-| **DistilBERT (fine-tuned)** | **0.9188** | **0.9185** | **0.9776** |
+| **Fine-tuned DistilBERT** | **0.9188** | **0.9185** | **0.9776** |
 
-![Model comparison](reports/figures/model_comparison.png)
+### Priority-layer results
 
-### Priority layer
 | Metric | Value |
-|---|---|
+|---|---:|
 | Priority accuracy | 0.9627 |
 | High-priority recall | 0.9250 |
 | High-priority precision | 0.9506 |
 
-### Confidence threshold: automation vs accuracy
-| Threshold | Tickets handled automatically | Accuracy on those |
-|---|---|---|
+### Confidence threshold: automation vs. accuracy
+
+| Threshold | Tickets handled automatically | Accuracy on automatically handled tickets |
+|---|---:|---:|
 | 0.50 | 94.2% | 95.1% |
 | **0.60 (default)** | **91.5%** | **96.0%** |
 | 0.70 | 88.2% | 96.8% |
 | 0.80 | 81.5% | 97.8% |
 | 0.90 | 68.0% | 99.0% |
 
-A higher threshold sends more tickets to humans but makes the automated decisions more reliable.
+A higher confidence threshold sends more tickets to human review, while improving accuracy among the tickets that are handled automatically. These results describe this evaluation setup and should not be treated as a guarantee of real-world performance.
 
-### Error analysis
-Most mistakes come from near-duplicate intents that are ambiguous even for humans:
+### Common classification confusions
 
 | True intent | Predicted as | Errors |
-|---|---|---|
+|---|---|---:|
 | `why_verify_identity` | `verify_my_identity` | 12 |
 | `card_arrival` | `card_delivery_estimate` | 4 |
 | `declined_transfer` | `declined_card_payment` | 4 |
-| `exchange_charge` | `exchange_rate` | frequent in confident errors |
+| `exchange_charge` | `exchange_rate` | Frequent in confident errors |
 
-Full analysis: `reports/error_analysis.csv`, `reports/figures/top_confusions.png`, `reports/figures/confusion_matrix.png`.
+Detailed outputs are saved under `reports/`, including error-analysis data and figures.
 
-## How it works
+![Model comparison](reports/figures/model_comparison.png)
+
+---
+
+## ⚙️ How It Works
 
 ```mermaid
-flowchart LR
-    A["Ticket text"] --> B["DistilBERT classifier"]
-    B --> C["Intent + confidence"]
-    C --> D{"Confidence ≥ 0.60?"}
-    D -- yes --> E["Priority rules<br/>High / Medium / Low"] --> F["Auto-route"]
-    D -- no --> G["Human review"]
+flowchart TD
+    A["Customer ticket text"] --> B["DistilBERT intent classifier"]
+    B --> C["Intent + confidence + top-k"]
+    C --> D{"Confidence >= 0.60?"}
+    D -- "Yes" --> E["Apply priority business rules"]
+    E --> F["Return routing recommendation"]
+    D -- "No" --> G["Flag for human review"]
 ```
 
-- **Model:** `distilbert-base-uncased` fine-tuned with a custom PyTorch loop (AdamW, linear warmup, gradient clipping, best checkpoint chosen by validation macro-F1).
-- **Training setup:** 4 epochs, batch size 32, learning rate 5e-5, max length 64, stratified 90/10 train/validation split, fixed seed.
-- **Priority rules:** `configs/priority_map.yaml` maps all 77 intents to a level (fraud and money-at-risk = High, transaction problems = Medium, how-to questions = Low). This is a business rule, not a learned label.
-- **Human-review flag:** predictions below the confidence threshold set `needs_human_review: true`.
+1. The user submits a message through the Streamlit interface or API.
+2. The classifier predicts one of 77 intent labels and a confidence score.
+3. The configured confidence threshold determines whether the prediction is flagged for review.
+4. If it meets the threshold, a separate business-rule map assigns High, Medium, or Low priority.
+5. The result includes the intent, confidence, priority, human-review flag, and top-k predictions where applicable.
 
-## Features
-- Baseline vs transformer comparison, per-class report, confusion and error analysis
-- Confidence-vs-coverage analysis to justify the automation threshold
-- REST API: `/health`, `/predict`, `/predict/batch` (input validation, 503 when no model is loaded)
-- Streamlit UI with priority colours, top-3 predictions and review warning
-- Unit and API tests with pytest, GitHub Actions CI, Dockerfile
-- Reproducible: fixed seeds, config-driven (`configs/config.yaml`), numbered pipeline scripts
+### Model and training setup
 
-## Project structure
-```
-├── configs/            config.yaml, priority_map.yaml
-├── notebooks/          pipeline.ipynb (runs the numbered scripts with %run)
-├── scripts/            01_download_data.py … 05_api_smoke_test.py
-├── src/ticketclf/      data, baseline, train, evaluate, predict, priority, api
-├── tests/              priority, data and API tests
-├── reports/            metrics.json, error_analysis.csv, figures/
-├── app.py              Streamlit UI
-├── Dockerfile          API container
-└── .github/workflows/  CI (pytest)
-```
+- **Base model:** `distilbert-base-uncased`
+- **Framework:** PyTorch, using a custom training loop
+- **Optimizer:** AdamW with linear warmup and gradient clipping
+- **Training configuration:** 4 epochs, batch size 32, learning rate `5e-5`, maximum sequence length 64
+- **Validation:** stratified 90/10 training/validation split
+- **Checkpoint selection:** best validation macro-F1
+- **Reproducibility:** fixed seed and configuration-driven settings
 
-## Quickstart
+### Priority and human-review logic
 
-```bash
-git clone https://github.com/Saikot313/ticketiq-support-ticket-classifier.git
-cd ticketiq-support-ticket-classifier
-python -m venv .venv
-.venv\Scripts\activate          # Windows  (Linux/macOS: source .venv/bin/activate)
-pip install -r requirements.txt
-```
+- `configs/priority_map.yaml` maps the 77 intents to a priority level.
+- Fraud and money-at-risk intents are mapped to High; transaction problems to Medium; how-to questions to Low, according to the configured rules.
+- The priority layer is **rule-based**, not trained on labelled urgency data.
+- Predictions below the configured confidence threshold set `needs_human_review: true`.
 
-### 1. Run the pipeline
-Open `notebooks/pipeline.ipynb` and run the cells in order, or run the scripts directly:
+---
 
-```bash
-python scripts/01_download_data.py      # download Banking77, split, validate priority map
-python scripts/02_train_baseline.py     # TF-IDF + Logistic Regression
-python scripts/03_train_distilbert.py   # fine-tune DistilBERT (CPU ~20-40 min)
-python scripts/04_evaluate.py           # metrics, plots, error analysis
-python scripts/05_api_smoke_test.py     # end-to-end API check
-```
+## 🔌 API
 
-### 2. Serve the API
-```bash
-uvicorn ticketclf.api:app --app-dir src --port 8000
-```
-Interactive docs: http://127.0.0.1:8000/docs
+The FastAPI service provides these endpoints:
 
-```bash
-curl -X POST http://127.0.0.1:8000/predict \
-  -H "Content-Type: application/json" \
-  -d "{\"text\": \"My card was stolen and I see payments I did not make\"}"
-```
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Health check |
+| `POST /predict` | Classify one ticket |
+| `POST /predict/batch` | Classify a batch of tickets |
+
+The API validates input and returns a `503` response if no model is loaded.
+
+### Example response
+
+The values below are illustrative, not a guaranteed output for every run.
 
 ```json
 {
@@ -148,39 +167,206 @@ curl -X POST http://127.0.0.1:8000/predict \
   ]
 }
 ```
-(Values shown are illustrative.)
 
-### 3. Streamlit UI
+### Example API request
+
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"My card was stolen and I see payments I did not make\"}"
+```
+
+Interactive API documentation is available at `http://127.0.0.1:8000/docs` after the API starts.
+
+---
+
+## 🗂️ Project Structure
+
+```text
+ticketiq-support-ticket-classifier/
+├── configs/
+│   ├── config.yaml
+│   └── priority_map.yaml
+├── notebooks/
+│   └── pipeline.ipynb
+├── scripts/
+│   ├── 01_download_data.py
+│   ├── 02_train_baseline.py
+│   ├── 03_train_distilbert.py
+│   ├── 04_evaluate.py
+│   └── 05_api_smoke_test.py
+├── src/ticketclf/
+│   ├── data
+│   ├── baseline
+│   ├── train
+│   ├── evaluate
+│   ├── predict
+│   ├── priority
+│   └── api
+├── tests/
+├── reports/
+│   └── figures/
+├── screenshots/
+│   ├── user-interface.png
+│   ├── test-one.png
+│   ├── test-two.png
+│   └── session-log.png
+├── app.py
+├── Dockerfile
+└── .github/workflows/ci.yml
+```
+
+---
+
+## 🚀 Getting Started
+
+### Requirements
+
+- Python 3.10 or later
+- Git
+- Internet access for downloading the dataset and pretrained model
+- Optional: Docker for containerized API execution
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Saikot313/ticketiq-support-ticket-classifier.git
+cd ticketiq-support-ticket-classifier
+```
+
+### 2. Create and activate a virtual environment
+
+**Windows PowerShell**
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+**Linux/macOS**
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Run the ML pipeline
+
+Open `notebooks/pipeline.ipynb` and run the cells in order, or execute the scripts from the repository root:
+
+```bash
+python scripts/01_download_data.py
+python scripts/02_train_baseline.py
+python scripts/03_train_distilbert.py
+python scripts/04_evaluate.py
+python scripts/05_api_smoke_test.py
+```
+
+The DistilBERT training step may take considerably longer on CPU than on a compatible GPU. Runtime depends on hardware and environment.
+
+### 5. Start the FastAPI service
+
+```bash
+uvicorn ticketclf.api:app --app-dir src --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000/docs` to inspect and test the API.
+
+### 6. Start the Streamlit dashboard
+
+In a separate terminal, with the virtual environment activated:
+
 ```bash
 streamlit run app.py
 ```
 
-### 4. Docker
-```bash
-docker build -t ticketiq .
-docker run -p 8000:8000 ticketiq
-```
+Streamlit will print the local URL to open in your browser.
 
-### 5. Tests
+### 7. Run tests
+
 ```bash
 pytest -q
 ```
 
-## Limitations
-- Trained on public **banking** queries in **English** only. Real support tickets from another domain need domain-specific fine-tuning.
-- Priority levels are hand-written business rules, not learned from labelled urgency data.
-- About 7.5% of truly high-priority tickets are not predicted as High. The human-review threshold reduces this risk but does not remove it.
-- Several intents overlap heavily (see error analysis), which caps achievable accuracy on this dataset.
+### 8. Run the API with Docker
 
-## Roadmap
-- [ ] n8n workflow that calls `/predict` and routes tickets to Slack / Google Sheets by priority
-- [ ] Fine-tune on domain-specific tickets and add multilingual support
-- [ ] Calibrate confidence scores (temperature scaling)
+Build the image:
 
-## Data and citation
-[Banking77](https://github.com/PolyAI-LDN/task-specific-datasets) (CC BY 4.0):
-Casanueva et al., 2020, *Efficient Intent Detection with Dual Sentence Encoders*.
+```bash
+docker build -t ticketiq .
+```
 
-## Author
-**Md. Sakender Saikot**: [GitHub](https://github.com/Saikot313)
+Start the container:
 
+```bash
+docker run --rm -p 8000:8000 ticketiq
+```
+
+Then open `http://127.0.0.1:8000/docs`.
+
+---
+
+## 🔬 Evaluation and Error Analysis
+
+The repository includes a baseline-versus-transformer comparison, per-class metrics, confusion-matrix visualizations, and error-analysis outputs. The analysis highlights near-duplicate or semantically overlapping labels, where a ticket can resemble more than one intent.
+
+Review these generated artifacts after running the evaluation pipeline:
+
+- `reports/metrics.json`
+- `reports/error_analysis.csv`
+- `reports/figures/model_comparison.png`
+- `reports/figures/top_confusions.png`
+- `reports/figures/confusion_matrix.png`
+
+---
+
+## ⚠️ Limitations
+
+- The model is evaluated on public, English-language Banking77 queries, not live production tickets.
+- The dataset is banking-domain specific; other industries may require domain-specific training or evaluation.
+- Priority assignment uses hand-written business rules rather than labelled urgency data.
+- The reported evaluation results do not guarantee production performance.
+- Some intents overlap semantically and can be difficult to distinguish.
+- The reported evaluation indicates that some truly high-priority tickets are not predicted as High; human review and operational safeguards remain important.
+- Confidence scores are model outputs and should not be interpreted as guarantees of correctness.
+
+---
+
+## 🛣️ Roadmap
+
+- [ ] Build an n8n workflow that calls `/predict` and routes tickets to Slack or Google Sheets by priority.
+- [ ] Fine-tune and evaluate on domain-specific support tickets.
+- [ ] Add multilingual support.
+- [ ] Evaluate confidence calibration, including temperature scaling.
+- [ ] Add end-to-end integration tests for downstream automation.
+
+---
+
+## 📚 Dataset and Citation
+
+The project uses **Banking77**, a public dataset of banking customer-service queries.
+
+- Dataset repository: [PolyAI task-specific datasets](https://github.com/PolyAI-LDN/task-specific-datasets)
+- License stated for the dataset: CC BY 4.0
+- Paper: Casanueva et al. (2020), *Efficient Intent Detection with Dual Sentence Encoders*.
+
+Please consult the dataset repository and paper for the original dataset details and citation requirements.
+
+---
+
+## 👤 Author
+
+**Md. Sakender Saikot**
+
+- GitHub: [Saikot313](https://github.com/Saikot313)
+
+---
+
+*TicketIQ is a portfolio and demonstration project. Do not use it as the sole basis for real financial, fraud, or customer-impacting decisions without domain-specific validation, monitoring, and human oversight.*
